@@ -48,9 +48,12 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
+from segmentation import Segmentation
+seg = Segmentation(model_path='deeplabv3_xception_ade20k_train/frozen_inference_graph.pb')
 
 from trial import get_queue
-from get_prepared_data import do_All_Prepared
+# from get_prepared_data import do_All_Prepared
+from get_prepared_data_multi import do_All_Prepared
 
 # def get_video_id(videopath):
 #   return "%s_%s" % tuple(videopath.split("\\")[-3:-1])
@@ -61,7 +64,7 @@ def detect(images_try):
     annotation=[]
     dataset_resize={}
     target_resolution = (1920, 1080)
-    
+    images_lst = []
     
     yolo_weights= 'yolov5l.pt'
     config_deepsort= 'deep_sort_pytorch/configs/deep_sort.yaml'
@@ -193,6 +196,7 @@ def detect(images_try):
                         # # save_path += f'{frame_idx -1}.png'
                         # cv2.imwrite(save_path,im0)
                         
+                        
             else:
                 deepsort.increment_ages()
                 
@@ -207,16 +211,20 @@ def detect(images_try):
             if rotate_90_clockwise:
                 im0s = cv2.transpose(im0s)
             dataset_resize[frame_idx] = cv2.resize(im0s, target_resolution)
-
+            images_lst.append(cv2.resize(im0s, target_resolution))
     changelst=[video_id, (w,h), rotate_90_clockwise]
     
 
-    traj_data, person_box_data, other_box_data = do_All_Prepared(annotation)
-    # Print results
-    t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    
-    LOGGER.info(f"{dataset_resize, changelst, annotation, traj_data, person_box_data}")
-    return dataset_resize, changelst, annotation
+    traj_data, person_box_data, other_box_data, multifuture_data = do_All_Prepared(annotation)
+    seg_imgs = seg.run_model(images_lst)
+    # print(seg_imgs)
 
-detect(images_try)
+    # # Print results
+    # t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
+    # LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+    
+    # LOGGER.info(f"{dataset_resize, changelst, annotation, traj_data, person_box_data, other_box_data, multifuture_data, seg_imgs}")
+    print('end trial2')
+    return dataset_resize, changelst, annotation, traj_data, person_box_data, other_box_data, multifuture_data, seg_imgs
+
+# detect(images_try)
