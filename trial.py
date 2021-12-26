@@ -13,7 +13,9 @@ def start_capture_thread(cap, queue):
 	i=0
     # continuously read frames from the camera
 	while True:
-		_, img = cap.read()
+		ret, img = cap.read()
+        # if not ret:
+        #     break 
 		queue.put(img)
 		# cv2.imwrite('Images/frame{:d}.jpg'.format(i), img)
 		i +=1
@@ -41,7 +43,7 @@ def get_queue():
     print('* Capture FPS:', cap_fps)
 
     # create a queue
-    frames_queue = queue.Queue(maxsize=61)
+    frames_queue = queue.Queue(maxsize=328)#328
     
     # start the capture thread: reads frames from the camera (non-stop) and stores the result in img
     t = Thread(target=start_capture_thread, args=(cap, frames_queue,), daemon=True) # a deamon thread is killed when the application exits
@@ -59,30 +61,31 @@ def get_queue():
         if (frames_queue.empty()):
             continue
 
-        # print(frames_queue.qsize())
-        # print(frames_queue)
+        print(frames_queue.qsize())
+        print(frames_queue)
         
-        if i%5 !=0 :
-            _ = frames_queue.get()
-            i+=1
-            continue
+        # if i%5 !=0 :
+        #     _ = frames_queue.get()
+        #     i+=1
+        #     continue
 
-        # blocks until the entire frame is read
-        frames += 1
+        # # blocks until the entire frame is read
+        # frames += 1
 
-        # # measure runtime: current_time - last_time
-        delta_time = datetime.datetime.now() - last_time
-        elapsed_time = delta_time.total_seconds()
+        # # # measure runtime: current_time - last_time
+        # delta_time = datetime.datetime.now() - last_time
+        # elapsed_time = delta_time.total_seconds()
 
-        # compute fps but avoid division by zero
-        if (elapsed_time != 0):
-            cur_fps = np.around(frames / elapsed_time, 1)
+        # # compute fps but avoid division by zero
+        # if (elapsed_time != 0):
+        #     cur_fps = np.around(frames / elapsed_time, 1)
 
         # retrieve an image from the queue
         img = frames_queue.get()
         images.append(img)
         # cv2.imwrite('Images/frame{:d}.jpg'.format(i), img)
         i+=1
+        frames += 1
        
         # draw FPS text and display image
         if (img is not None):
@@ -94,11 +97,12 @@ def get_queue():
         if (key == 27):
             stop_thread = True
             break
-        if frames==61:
+        if frames==328:#328
             print(len(images))
             cv2.destroyAllWindows()
             cap.release()
             # print(images)
+            print('end trial')
             return images
 
 
